@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=quiz.schema.json
+slug: http-basics
+title: HTTP Basics
+questions:
+  - id: q1
+    prompt: Which status code means "Not Found"?
+    type: single
+    options:
+      - {id: a, text: "200"}
+      - {id: b, text: "301"}
+      - {id: c, text: "404"}
+      - {id: d, text: "500"}
+    correct: [c]
+    explanation: 404 means the server could not find the requested resource.
+  - id: q2
+    prompt: Which methods are idempotent by definition?
+    type: multi
+    options:
+      - {id: a, text: GET}
+      - {id: b, text: POST}
+      - {id: c, text: PUT}
+      - {id: d, text: DELETE}
+    correct: [a, c, d]
+    explanation: Repeating GET, PUT or DELETE has the same effect as sending it once. POST does not.
+  - id: q3
+    prompt: Which header tells the client the format of the response body?
+    type: single
+    options:
+      - {id: a, text: Accept}
+      - {id: b, text: Content-Type}
+      - {id: c, text: Host}
+    correct: [b]
+    explanation: Content-Type describes the body being sent. Accept is what the client asks for.
