@@ -30,7 +30,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - `/healthz` returns 200 against the DB
   - Covers: none (groundwork for US4.3).
 
-- [ ] **4. Anonymous player cookie**
+- [x] **4. Anonymous player cookie**
   - `app/player.py` dependency: creates a Player when the cookie is missing, malformed or unknown, and sets or refreshes the `player_id` cookie (HttpOnly, SameSite=Lax, Secure when `COOKIE_SECURE`). `/healthz` and `/static` are exempt.
   - Tests:
     - the first `GET /` sets an HttpOnly cookie and the Player row exists
