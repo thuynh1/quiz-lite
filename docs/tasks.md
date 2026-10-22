@@ -2,7 +2,7 @@
 
 Work from the first unchecked task. Each task is one session and one commit. It ends with lint and the full test suite passing, and it is checked off in the same commit. Criterion IDs are `US<story>.<n>`, numbered in the order the criteria appear in `docs/spec.md`.
 
-- [ ] **1. Skeleton, smoke test, CI**
+- [x] **1. Skeleton, smoke test, CI**
   - `pyproject.toml` (uv, Python 3.12, ruff config, pytest config), `uv.lock`, `app/main.py` with `GET /healthz` returning `{"status": "ok"}` (no DB yet), `.gitignore`.
   - `.github/workflows/ci.yml` on push and PR: `uv sync --locked`, `ruff check`, `ruff format --check`, `pytest`.
   - Test: `tests/test_smoke.py`, where `GET /healthz` returns 200.
