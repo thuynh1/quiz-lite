@@ -142,3 +142,4 @@ Resolved from the spec gaps in `docs/plan.md`.
 12. Times use the browser's time zone from a JS-set `tz` cookie, and without it they show in UTC, labelled UTC.
 13. A quiz's `slug` must equal its file name stem.
 14. The 200 ms target is server-side p95 latency, checked by the post-deploy smoke test.
+15. The app runs on Render's free tier. Cold starts are accepted: an idle service spins down after 15 minutes and takes about a minute to wake. The 200 ms target applies to a warm server. Free Postgres expires after 30 days, which is also accepted for now.
