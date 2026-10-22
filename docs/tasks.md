@@ -66,7 +66,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - an empty, unknown or duplicate ID, or two IDs on single, returns 422
   - Covers: US2.1, US2.2, US2.3.
 
-- [ ] **8. Complete an attempt and show the score**
+- [x] **8. Complete an attempt and show the score**
   - The final answer completes the attempt in the same transaction (row lock, score, `completed_at`). `GET /attempts/{id}/result` added. Answering a completed attempt returns 409.
   - Tests:
     - 5 answers with 3 correct gives `3 / 5` on the result page, and the row is `completed` with score 3

@@ -6,7 +6,15 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.db import answered_question_ids, create_attempt, get_answer, get_attempt, insert_answer
+from app.db import (
+    answered_question_ids,
+    complete_attempt,
+    create_attempt,
+    get_answer,
+    get_attempt,
+    get_score,
+    record_answer,
+)
 from app.grading import grade
 from app.player import current_player
 from app.quizzes import Question, Quiz
@@ -51,9 +59,27 @@ def resume_attempt(request: Request, attempt_id: str, player_id: PlayerId):
     attempt_uuid, quiz, status = owned_attempt(request, attempt_id, player_id)
     answered = answered_question_ids(request.app.state.pool, attempt_uuid)
     next_id = next((q.id for q in quiz.questions if q.id not in answered), None)
-    if status == "completed" or next_id is None:
+    if status == "in_progress" and next_id is None:
+        complete_attempt(request.app.state.pool, attempt_uuid, question_ids(quiz))
+        status = "completed"
+    if status == "completed":
         return RedirectResponse(f"/attempts/{attempt_uuid}/result", 303)
     return RedirectResponse(f"/attempts/{attempt_uuid}/questions/{next_id}", 303)
+
+
+@router.get("/attempts/{attempt_id}/result", response_class=HTMLResponse)
+def show_result(request: Request, attempt_id: str, player_id: PlayerId):
+    attempt_uuid, quiz, status = owned_attempt(request, attempt_id, player_id)
+    if status != "completed":
+        return RedirectResponse(f"/attempts/{attempt_uuid}", 303)
+    score = get_score(request.app.state.pool, attempt_uuid)
+    return templates.TemplateResponse(
+        request, "result.html", {"quiz": quiz, "score": score, "total": len(quiz.questions)}
+    )
+
+
+def question_ids(quiz: Quiz) -> list[str]:
+    return [question.id for question in quiz.questions]
 
 
 def find_question(quiz: Quiz, qid: str) -> tuple[int, Question]:
@@ -68,6 +94,7 @@ def render_question(
     attempt_id: UUID,
     quiz: Quiz,
     qid: str,
+    completed: bool,
     error: str | None = None,
     status_code: int = 200,
 ) -> HTMLResponse:
@@ -83,6 +110,7 @@ def render_question(
             "number": number,
             "total": len(quiz.questions),
             "answer": answer,
+            "completed": completed,
             "error": error,
         },
         status_code=status_code,
@@ -91,8 +119,8 @@ def render_question(
 
 @router.get("/attempts/{attempt_id}/questions/{qid}", response_class=HTMLResponse)
 def show_question(request: Request, attempt_id: str, qid: str, player_id: PlayerId):
-    attempt_uuid, quiz, _ = owned_attempt(request, attempt_id, player_id)
-    return render_question(request, attempt_uuid, quiz, qid)
+    attempt_uuid, quiz, status = owned_attempt(request, attempt_id, player_id)
+    return render_question(request, attempt_uuid, quiz, qid, status == "completed")
 
 
 def selection_error(question: Question, selected: list[str]) -> str | None:
@@ -115,11 +143,14 @@ def submit_answer(
     player_id: PlayerId,
     selected: Annotated[list[str], Form(default_factory=list)],
 ):
-    attempt_uuid, quiz, _ = owned_attempt(request, attempt_id, player_id)
+    attempt_uuid, quiz, status = owned_attempt(request, attempt_id, player_id)
     _, question = find_question(quiz, qid)
     if error := selection_error(question, selected):
-        return render_question(request, attempt_uuid, quiz, qid, error, 422)
+        return render_question(request, attempt_uuid, quiz, qid, False, error, 422)
+    is_correct = grade(question, selected)
     pool = request.app.state.pool
-    if not insert_answer(pool, attempt_uuid, qid, selected, grade(question, selected)):
-        return render_question(request, attempt_uuid, quiz, qid, status_code=409)
+    if not record_answer(pool, attempt_uuid, question_ids(quiz), qid, selected, is_correct):
+        return render_question(
+            request, attempt_uuid, quiz, qid, status == "completed", status_code=409
+        )
     return RedirectResponse(f"/attempts/{attempt_uuid}/questions/{qid}", 303)

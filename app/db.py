@@ -56,16 +56,57 @@ def answered_question_ids(pool: ConnectionPool, attempt_id: UUID) -> set[str]:
         return {question_id for (question_id,) in rows}
 
 
-def insert_answer(
-    pool: ConnectionPool, attempt_id: UUID, question_id: str, selected: list[str], is_correct: bool
+def get_score(pool: ConnectionPool, attempt_id: UUID) -> int:
+    with pool.connection() as conn:
+        return conn.execute("SELECT score FROM attempt WHERE id = %s", (attempt_id,)).fetchone()[0]
+
+
+def lock_in_progress(conn: psycopg.Connection, attempt_id: UUID) -> bool:
+    status = conn.execute(
+        "SELECT status FROM attempt WHERE id = %s FOR UPDATE", (attempt_id,)
+    ).fetchone()[0]
+    return status == "in_progress"
+
+
+def complete_if_all_answered(
+    conn: psycopg.Connection, attempt_id: UUID, question_ids: list[str]
+) -> None:
+    conn.execute(
+        "UPDATE attempt SET status = 'completed', completed_at = now(), score = ("
+        "  SELECT count(*) FILTER (WHERE is_correct) FROM answer"
+        "  WHERE attempt_id = %(id)s AND question_id = ANY(%(qids)s))"
+        " WHERE id = %(id)s AND status = 'in_progress' AND cardinality(%(qids)s::text[]) = ("
+        "  SELECT count(*) FROM answer WHERE attempt_id = %(id)s AND question_id = ANY(%(qids)s))",
+        {"id": attempt_id, "qids": question_ids},
+    )
+
+
+def complete_attempt(pool: ConnectionPool, attempt_id: UUID, question_ids: list[str]) -> None:
+    with pool.connection() as conn:
+        if lock_in_progress(conn, attempt_id):
+            complete_if_all_answered(conn, attempt_id, question_ids)
+
+
+def record_answer(
+    pool: ConnectionPool,
+    attempt_id: UUID,
+    question_ids: list[str],
+    question_id: str,
+    selected: list[str],
+    is_correct: bool,
 ) -> bool:
     with pool.connection() as conn:
+        if not lock_in_progress(conn, attempt_id):
+            return False
         inserted = conn.execute(
             "INSERT INTO answer (attempt_id, question_id, selected, is_correct)"
             " VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING 1",
             (attempt_id, question_id, selected, is_correct),
         ).fetchone()
-        return inserted is not None
+        if inserted is None:
+            return False
+        complete_if_all_answered(conn, attempt_id, question_ids)
+        return True
 
 
 def get_answer(
