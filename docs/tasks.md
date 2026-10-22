@@ -56,7 +56,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - another player's cookie gets 404
   - Covers: US2.4.
 
-- [ ] **7. Grade and store answers with feedback**
+- [x] **7. Grade and store answers with feedback**
   - `app/grading.py` (exact set match). `POST /attempts/{id}/questions/{qid}` validates the selection (422), inserts with `ON CONFLICT DO NOTHING` (409 on duplicate) and redirects to feedback. The answered state of the question page shows Correct or Wrong, the correct set when wrong, and the explanation.
   - Tests:
     - unit: single correct, multi exact match, multi subset wrong, multi superset wrong

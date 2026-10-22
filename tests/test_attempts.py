@@ -98,3 +98,100 @@ def test_another_players_attempt_is_404(make_client):
 
     assert question.status_code == 404
     assert resume.status_code == 404
+
+
+def answer(client, location, *selected):
+    return client.post(location, data={"selected": list(selected)}, follow_redirects=False)
+
+
+def stored_answers(db):
+    return db.execute("SELECT question_id, selected, is_correct FROM answer").fetchall()
+
+
+def test_correct_single_redirects_to_feedback_with_correct_and_explanation(make_client, db):
+    with make_client() as client:
+        location = start(client)
+        response = answer(client, location, "b")
+        page = client.get(location)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == location
+    assert stored_answers(db) == [("q1", ["b"], True)]
+    assert "Correct" in page.text
+    assert "Wrong" not in page.text
+    assert "B is right." in page.text
+    assert f'href="{location.removesuffix("/questions/q1")}"' in page.text
+    assert "<form" not in page.text
+
+
+def test_wrong_multi_shows_wrong_correct_set_and_explanation(make_client, db):
+    with make_client() as client:
+        location = start(client, "beta").replace("/q1", "/q2")
+        response = answer(client, location, "a", "c")
+        page = client.get(location)
+
+    assert response.status_code == 303
+    assert stored_answers(db) == [("q2", ["a", "c"], False)]
+    text = " ".join(re.sub(r"<[^>]+>", " ", page.text).split())
+    assert "Wrong" in text
+    assert "Your answer: A, C" in text
+    assert "Correct answer: A, C, D" in text
+    assert "A, C and D are right." in text
+
+
+def test_wrong_single_shows_correct_answer(make_client):
+    with make_client() as client:
+        location = start(client)
+        answer(client, location, "a")
+        text = " ".join(re.sub(r"<[^>]+>", " ", client.get(location).text).split())
+
+    assert "Wrong" in text
+    assert "Correct answer: B" in text
+
+
+def test_resubmit_is_409_and_first_answer_stands(make_client, db):
+    with make_client() as client:
+        location = start(client)
+        answer(client, location, "a")
+        response = answer(client, location, "b")
+
+    assert response.status_code == 409
+    assert "Wrong" in response.text
+    assert "Your answer: A" in " ".join(re.sub(r"<[^>]+>", " ", response.text).split())
+    assert stored_answers(db) == [("q1", ["a"], False)]
+
+
+@pytest.mark.parametrize(
+    ("slug", "qid", "selected"),
+    [
+        ("alpha", "q1", []),
+        ("alpha", "q1", ["z"]),
+        ("alpha", "q2", ["a", "a"]),
+        ("alpha", "q1", ["a", "b"]),
+    ],
+    ids=["empty", "unknown", "duplicate", "two-on-single"],
+)
+def test_invalid_selection_is_422_with_form_and_stores_nothing(
+    make_client, db, slug, qid, selected
+):
+    with make_client() as client:
+        location = start(client, slug).replace("/q1", f"/{qid}")
+        response = answer(client, location, *selected)
+
+    assert response.status_code == 422
+    assert '<form method="post">' in response.text
+    assert 'role="alert"' in response.text
+    assert "correct" not in response.text.lower()
+    assert stored_answers(db) == []
+
+
+def test_answer_unknown_question_or_other_players_attempt_is_404(make_client, db):
+    with make_client() as owner:
+        location = start(owner)
+        unknown_qid = answer(owner, location.replace("/q1", "/q9"), "a")
+    with make_client() as other:
+        foreign = answer(other, location, "b")
+
+    assert unknown_qid.status_code == 404
+    assert foreign.status_code == 404
+    assert stored_answers(db) == []

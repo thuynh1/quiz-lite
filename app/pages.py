@@ -2,13 +2,14 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.db import answered_question_ids, create_attempt, get_attempt
+from app.db import answered_question_ids, create_attempt, get_answer, get_attempt, insert_answer
+from app.grading import grade
 from app.player import current_player
-from app.quizzes import Quiz
+from app.quizzes import Question, Quiz
 
 router = APIRouter(dependencies=[Depends(current_player)])
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -55,16 +56,70 @@ def resume_attempt(request: Request, attempt_id: str, player_id: PlayerId):
     return RedirectResponse(f"/attempts/{attempt_uuid}/questions/{next_id}", 303)
 
 
-@router.get("/attempts/{attempt_id}/questions/{qid}", response_class=HTMLResponse)
-def show_question(request: Request, attempt_id: str, qid: str, player_id: PlayerId):
-    _, quiz, _ = owned_attempt(request, attempt_id, player_id)
-    number, question = next(
-        ((n, q) for n, q in enumerate(quiz.questions, 1) if q.id == qid), (None, None)
-    )
-    if question is None:
-        raise HTTPException(404)
+def find_question(quiz: Quiz, qid: str) -> tuple[int, Question]:
+    for number, question in enumerate(quiz.questions, 1):
+        if question.id == qid:
+            return number, question
+    raise HTTPException(404)
+
+
+def render_question(
+    request: Request,
+    attempt_id: UUID,
+    quiz: Quiz,
+    qid: str,
+    error: str | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    number, question = find_question(quiz, qid)
+    answer = get_answer(request.app.state.pool, attempt_id, qid)
     return templates.TemplateResponse(
         request,
         "question.html",
-        {"quiz": quiz, "question": question, "number": number, "total": len(quiz.questions)},
+        {
+            "attempt_id": attempt_id,
+            "quiz": quiz,
+            "question": question,
+            "number": number,
+            "total": len(quiz.questions),
+            "answer": answer,
+            "error": error,
+        },
+        status_code=status_code,
     )
+
+
+@router.get("/attempts/{attempt_id}/questions/{qid}", response_class=HTMLResponse)
+def show_question(request: Request, attempt_id: str, qid: str, player_id: PlayerId):
+    attempt_uuid, quiz, _ = owned_attempt(request, attempt_id, player_id)
+    return render_question(request, attempt_uuid, quiz, qid)
+
+
+def selection_error(question: Question, selected: list[str]) -> str | None:
+    if not selected:
+        return "Pick an option."
+    if not set(selected) <= {option.id for option in question.options}:
+        return "Pick from the listed options."
+    if len(set(selected)) != len(selected):
+        return "Pick each option at most once."
+    if question.type == "single" and len(selected) > 1:
+        return "Pick only one option."
+    return None
+
+
+@router.post("/attempts/{attempt_id}/questions/{qid}", response_class=HTMLResponse)
+def submit_answer(
+    request: Request,
+    attempt_id: str,
+    qid: str,
+    player_id: PlayerId,
+    selected: Annotated[list[str], Form(default_factory=list)],
+):
+    attempt_uuid, quiz, _ = owned_attempt(request, attempt_id, player_id)
+    _, question = find_question(quiz, qid)
+    if error := selection_error(question, selected):
+        return render_question(request, attempt_uuid, quiz, qid, error, 422)
+    pool = request.app.state.pool
+    if not insert_answer(pool, attempt_uuid, qid, selected, grade(question, selected)):
+        return render_question(request, attempt_uuid, quiz, qid, status_code=409)
+    return RedirectResponse(f"/attempts/{attempt_uuid}/questions/{qid}", 303)
