@@ -84,7 +84,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - points survive a fresh app with a new pool and the same cookie
   - Covers: US1.2, US1.4, US4.2, US4.3.
 
-- [ ] **10. Production container**
+- [x] **10. Production container**
   - Harden the `Dockerfile`: `--no-dev`, non-root user, `PORT`, and a CMD that migrates then serves. Add a `.dockerignore`. CI builds the image and runs it against the service Postgres, then curls `/healthz`.
   - Test: the CI container smoke step passes, and the local `pytest` suite stays green.
   - Covers: US4.3 (migrate on boot against existing data is a no-op).

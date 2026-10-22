@@ -31,3 +31,12 @@ jobs:
       - run: uv run pytest -q
         env:
           TEST_DATABASE_URL: postgresql://quiz:quiz@localhost:5432/quiz_test
+      - run: docker build -t quiz-lite .
+      - name: Container smoke test
+        run: |
+          docker run -d --name app --network host -e PORT=8080 \
+            -e DATABASE_URL=postgresql://quiz:quiz@localhost:5432/quiz_test quiz-lite
+          curl -sf --retry 15 --retry-delay 1 --retry-all-errors http://localhost:8080/healthz
+          docker logs app 2>&1 | tee app.log
+          # pytest already migrated this database, so boot must apply nothing (US4.3).
+          ! grep -q '^applied' app.log
