@@ -1,6 +1,8 @@
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -10,6 +12,7 @@ from app.db import (
     answered_question_ids,
     complete_attempt,
     create_attempt,
+    derived_values,
     get_answer,
     get_attempt,
     get_score,
@@ -24,13 +27,40 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 PlayerId = Annotated[UUID, Depends(current_player)]
 
 
+def format_best(best: int | None, total: int) -> str | None:
+    if best is None:
+        return None
+    percent = (200 * best + total) // (2 * total)
+    return f"{best} / {total} | {percent}%"
+
+
+def format_local(moment: datetime | None, tz: str | None) -> str | None:
+    if moment is None:
+        return None
+    try:
+        return moment.astimezone(ZoneInfo(tz)).strftime("%Y-%m-%d %H:%M")
+    except (TypeError, ValueError, LookupError, OSError):
+        return moment.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%d %H:%M UTC")
+
+
 @router.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    rows = [
-        {"quiz": quiz, "best": None, "last_attempted": None}
-        for quiz in request.app.state.quizzes.values()
-    ]
-    return templates.TemplateResponse(request, "home.html", {"total_points": 0, "rows": rows})
+def home(request: Request, player_id: PlayerId):
+    derived = derived_values(request.app.state.pool, player_id)
+    tz = request.cookies.get("tz")
+    rows = []
+    for quiz in request.app.state.quizzes.values():
+        best, last_started = derived.get(quiz.slug, (None, None))
+        rows.append(
+            {
+                "quiz": quiz,
+                "best": format_best(best, len(quiz.questions)),
+                "last_attempted": format_local(last_started, tz),
+            }
+        )
+    total_points = sum(best or 0 for best, _ in derived.values())
+    return templates.TemplateResponse(
+        request, "home.html", {"total_points": total_points, "rows": rows}
+    )
 
 
 @router.post("/quizzes/{slug}/attempts")

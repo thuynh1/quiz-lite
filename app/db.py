@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID, uuid4
 
 import psycopg
@@ -117,3 +118,13 @@ def get_answer(
             "SELECT selected, is_correct FROM answer WHERE attempt_id = %s AND question_id = %s",
             (attempt_id, question_id),
         ).fetchone()
+
+
+def derived_values(pool: ConnectionPool, player_id: UUID) -> dict[str, tuple[int | None, datetime]]:
+    with pool.connection() as conn:
+        rows = conn.execute(
+            "SELECT quiz_slug, max(score) FILTER (WHERE status = 'completed'), max(started_at)"
+            " FROM attempt WHERE player_id = %s GROUP BY quiz_slug",
+            (player_id,),
+        )
+        return {slug: (best, last_started) for slug, best, last_started in rows}

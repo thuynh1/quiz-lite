@@ -74,7 +74,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - the result page of an in-progress attempt redirects
   - Covers: US3.1, US3.2.
 
-- [ ] **9. Best score, total points, Last Attempted**
+- [x] **9. Best score, total points, Last Attempted**
   - The derived-values query in `db.py`. Home shows `3 / 5 | 60%`, the total in the header, and Last Attempted formatted in the `tz` cookie's zone (UTC fallback).
   - Tests:
     - a completed 3/5 shows `3 / 5 | 60%`
