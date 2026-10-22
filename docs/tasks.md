@@ -20,7 +20,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - the committed schema matches the generated one
   - Covers: US5.2.
 
-- [ ] **3. Postgres, migrations, compose**
+- [x] **3. Postgres, migrations, compose**
   - `compose.yaml` (db and app), `Dockerfile` (dev-usable), `docker/initdb/01-test-db.sql`, `migrations/0001_init.sql`, `app/migrate.py`, `app/db.py` with the pool opened in the lifespan.
   - `/healthz` runs `SELECT 1` and returns 503 when the DB is down. `conftest.py` provides the test DB, migrations, truncation and a client factory. CI gains the Postgres service.
   - Tests:

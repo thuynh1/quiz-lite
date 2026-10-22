@@ -4,6 +4,8 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi",
+    "psycopg-pool>=3.3.3",
+    "psycopg[binary]>=3.3.6",
     "pyyaml>=6.0.3",
     "uvicorn",
 ]

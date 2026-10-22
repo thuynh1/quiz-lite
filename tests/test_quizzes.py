@@ -76,10 +76,10 @@ def test_app_startup_with_bad_directory_raises(tmp_path, monkeypatch):
         pass
 
 
-def test_app_startup_loads_quizzes(monkeypatch):
+def test_app_startup_loads_quizzes(monkeypatch, make_client):
     monkeypatch.setenv("QUIZ_DIR", str(FIXTURES))
 
-    with TestClient(app):
+    with make_client():
         assert sorted(app.state.quizzes) == ["alpha", "beta"]
 
 
