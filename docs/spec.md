@@ -123,3 +123,22 @@ Not in this MVP:
 - Partial credit, timed questions, or per-question point values
 - Multiple app instances or horizontal scaling
 
+
+## Clarifications
+
+Resolved from the spec gaps in `docs/plan.md`.
+
+1. The HTML form endpoints are the API; there is no separate JSON API, and "no `correct` field" means the unanswered question page contains no correctness data.
+2. Questions cannot be skipped, and an attempt completes automatically when its last question is answered.
+3. Start always creates a new attempt; abandoned attempts stay in progress forever, never count toward points, and still update Last Attempted.
+4. A quiz with no completed attempt shows `—` as its best score.
+5. A wrong answer always shows the correct set, for single-select as well as multi-select.
+6. Percentages round to the nearest whole percent, so 2 / 3 shows 67%.
+7. When a quiz is edited, completion and the question count use the current YAML, answers to removed question IDs are ignored, and stored best scores are shown as stored without capping.
+8. A deleted quiz's best score still counts toward total points, though the quiz leaves the list.
+9. Total points appear in the home page header.
+10. Any cookieless request creates a Player row, except `/healthz` and `/static`.
+11. The player cookie is refreshed on every visit because browsers cap cookie lifetime at 400 days, and clearing cookies loses points permanently.
+12. Times use the browser's time zone from a JS-set `tz` cookie, and without it they show in UTC, labelled UTC.
+13. A quiz's `slug` must equal its file name stem.
+14. The 200 ms target is server-side p95 latency, checked by the post-deploy smoke test.
