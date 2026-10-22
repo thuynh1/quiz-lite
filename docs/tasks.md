@@ -89,7 +89,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
   - Test: the CI container smoke step passes, and the local `pytest` suite stays green.
   - Covers: US4.3 (migrate on boot against existing data is a no-op).
 
-- [ ] **11. First deploy** (the owner picks Render or Fly.io first)
+- [x] **11. First deploy** (Render, free tier: see `render.yaml` and `docs/plan.md`)
   - Provision managed Postgres and the app in the same region and set `DATABASE_URL` as a secret. Add `scripts/smoke.sh <url>`, which checks:
     - `/healthz` returns 200
     - `/` sets an HttpOnly, Secure `player_id` cookie
@@ -98,9 +98,10 @@ Work from the first unchecked task. Each task is one session and one commit. It 
   - Test: the smoke script passes against the deployed URL. Redeploy, and a pre-existing player's total is unchanged.
   - Covers: US4.1, US4.3 (production).
 
-- [ ] **12. Continuous deploy**
+- [x] **12. Continuous deploy**
   - Deploy `main` only after CI passes: Render auto-deploy with the CI gate, or a `flyctl deploy` job with `needs: check`. Run `scripts/smoke.sh` after each deploy.
   - Test: a trivial commit to main deploys and the post-deploy smoke step passes.
+  - Done as: Render `autoDeployTrigger: checksPass` is the gate; post-deploy smoke is run by hand (owner decision 2026-10-22, automation in `docs/backlog.md`).
   - Covers: none (delivery).
 
 ## Criterion coverage
