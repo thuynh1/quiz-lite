@@ -195,3 +195,104 @@ def test_answer_unknown_question_or_other_players_attempt_is_404(make_client, db
     assert unknown_qid.status_code == 404
     assert foreign.status_code == 404
     assert stored_answers(db) == []
+
+
+def write_quiz(directory, qids):
+    questions = "".join(
+        f"  - id: {qid}\n    prompt: Pick b.\n    type: single\n"
+        "    options:\n      - {id: a, text: A}\n      - {id: b, text: B}\n"
+        "    correct: [b]\n    explanation: B is right.\n"
+        for qid in qids
+    )
+    (directory / "five.yaml").write_text(f"slug: five\ntitle: Five\nquestions:\n{questions}")
+
+
+@pytest.fixture
+def five(tmp_path, monkeypatch):
+    write_quiz(tmp_path, ["q1", "q2", "q3", "q4", "q5"])
+    monkeypatch.setenv("QUIZ_DIR", str(tmp_path))
+    return tmp_path
+
+
+def attempt_row(db, attempt_url):
+    return db.execute(
+        "SELECT status, score, completed_at IS NOT NULL FROM attempt WHERE id = %s",
+        (attempt_url.removeprefix("/attempts/"),),
+    ).fetchone()
+
+
+def test_five_answers_three_correct_completes_with_score(make_client, db, five):
+    with make_client() as client:
+        attempt_url = start(client, "five").removesuffix("/questions/q1")
+        for qid, choice in zip(["q1", "q2", "q3", "q4", "q5"], "bbbaa", strict=True):
+            assert answer(client, f"{attempt_url}/questions/{qid}", choice).status_code == 303
+        last = client.get(f"{attempt_url}/questions/q5")
+        resume = client.get(attempt_url, follow_redirects=False)
+        result = client.get(f"{attempt_url}/result")
+
+    assert attempt_row(db, attempt_url) == ("completed", 3, True)
+    assert f'<a href="{attempt_url}/result">See score</a>' in last.text
+    assert resume.headers["location"] == f"{attempt_url}/result"
+    assert result.status_code == 200
+    assert "3 / 5" in result.text
+    assert 'href="/"' in result.text
+
+
+def test_left_after_two_answers_stays_in_progress(make_client, db, five):
+    with make_client() as client:
+        attempt_url = start(client, "five").removesuffix("/questions/q1")
+        answer(client, f"{attempt_url}/questions/q1", "b")
+        answer(client, f"{attempt_url}/questions/q2", "b")
+        page = client.get(f"{attempt_url}/questions/q2")
+
+    assert attempt_row(db, attempt_url) == ("in_progress", None, False)
+    assert f'<a href="{attempt_url}">Next</a>' in page.text
+
+
+def test_result_of_in_progress_attempt_redirects_and_foreign_is_404(make_client):
+    with make_client() as owner:
+        attempt_url = start(owner).removesuffix("/questions/q1")
+        response = owner.get(f"{attempt_url}/result", follow_redirects=False)
+        unknown = owner.get(f"/attempts/{uuid.uuid4()}/result")
+    with make_client() as other:
+        foreign = other.get(f"{attempt_url}/result")
+
+    assert response.status_code == 303
+    assert response.headers["location"] == attempt_url
+    assert unknown.status_code == 404
+    assert foreign.status_code == 404
+
+
+def test_answering_completed_attempt_is_409_and_stores_nothing(make_client, db):
+    with make_client() as client:
+        location = start(client)
+        attempt_url = location.removesuffix("/questions/q1")
+        db.execute(
+            "UPDATE attempt SET status = 'completed', score = 0, completed_at = now()"
+            " WHERE id = %s",
+            (attempt_url.removeprefix("/attempts/"),),
+        )
+        response = answer(client, location, "b")
+
+    assert response.status_code == 409
+    assert stored_answers(db) == []
+
+
+def test_resume_completes_attempt_when_quiz_edit_leaves_nothing_unanswered(make_client, db, five):
+    with make_client() as client:
+        attempt_url = start(client, "five").removesuffix("/questions/q1")
+        for qid, choice in zip(["q1", "q2", "q3", "q4"], "bbab", strict=True):
+            answer(client, f"{attempt_url}/questions/{qid}", choice)
+        player_id = client.cookies["player_id"]
+
+    write_quiz(five, ["q2", "q3", "q4"])
+    with make_client() as client:
+        client.cookies.set("player_id", player_id)
+        resume = client.get(attempt_url, follow_redirects=False)
+        result = client.get(f"{attempt_url}/result", follow_redirects=False)
+
+    assert resume.status_code == 303
+    assert resume.headers["location"] == f"{attempt_url}/result"
+    assert attempt_row(db, attempt_url) == ("completed", 2, True)
+    assert result.status_code == 200
+    assert "2 / 3" in result.text

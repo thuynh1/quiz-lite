@@ -14,7 +14,7 @@
 <p>Correct answer: {{ question.options | selectattr("id", "in", question.correct) | map(attribute="text") | join(", ") }}</p>
 {% endif %}
 <p>{{ question.explanation }}</p>
-<a href="/attempts/{{ attempt_id }}">Next</a>
+{% if completed %}<a href="/attempts/{{ attempt_id }}/result">See score</a>{% else %}<a href="/attempts/{{ attempt_id }}">Next</a>{% endif %}
 {% else %}
 <form method="post">
   {% if error %}<p role="alert">{{ error }}</p>{% endif %}
