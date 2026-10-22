@@ -259,6 +259,8 @@ Managed Postgres is reached via `DATABASE_URL`, set as a host secret. Run one in
 
 **Chosen host: Render, free tier** (owner decision, 2026-10-22). The app and Postgres are defined in `render.yaml` as a Blueprint. The owner accepts the free-tier limits: the web service spins down after 15 minutes idle and takes about a minute to wake, and the free database expires after 30 days. The 200 ms target applies to a warm server (spec Clarification 15). The comparison below is kept as the record of the choice.
 
+**CD gate** (owner decision, 2026-10-22): `autoDeployTrigger: checksPass` in `render.yaml` deploys `main` only after its CI checks pass. There is no deploy workflow in GitHub Actions. The post-deploy smoke check stays manual: run `scripts/smoke.sh <service URL>` after a deploy. An automated post-deploy smoke job is in `docs/backlog.md`.
+
 | | Render | Fly.io |
 |---|---|---|
 | App | Web Service from the repo's Dockerfile | Machine from the Docker image via `fly deploy` |
