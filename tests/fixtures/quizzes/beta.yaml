@@ -9,3 +9,13 @@ questions:
       - {id: b, text: B}
     correct: [a]
     explanation: A is right.
+  - id: q2
+    prompt: Pick a, c and d.
+    type: multi
+    options:
+      - {id: a, text: A}
+      - {id: b, text: B}
+      - {id: c, text: C}
+      - {id: d, text: D}
+    correct: [a, c, d]
+    explanation: A, C and D are right.

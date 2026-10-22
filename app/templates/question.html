@@ -5,7 +5,19 @@
   <h1>{{ quiz.title }}</h1>
   <p>{{ number }} of {{ total }}</p>
 </header>
+{% if answer %}
+{% set selected, is_correct = answer %}
+<p><strong>{{ "Correct" if is_correct else "Wrong" }}</strong></p>
+<p>{{ question.prompt }}</p>
+<p>Your answer: {{ question.options | selectattr("id", "in", selected) | map(attribute="text") | join(", ") }}</p>
+{% if not is_correct %}
+<p>Correct answer: {{ question.options | selectattr("id", "in", question.correct) | map(attribute="text") | join(", ") }}</p>
+{% endif %}
+<p>{{ question.explanation }}</p>
+<a href="/attempts/{{ attempt_id }}">Next</a>
+{% else %}
 <form method="post">
+  {% if error %}<p role="alert">{{ error }}</p>{% endif %}
   <fieldset>
     <legend>{{ question.prompt }}</legend>
     {% for option in question.options %}
@@ -14,4 +26,5 @@
   </fieldset>
   <button type="submit">Submit</button>
 </form>
+{% endif %}
 {% endblock %}

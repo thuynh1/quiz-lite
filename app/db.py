@@ -54,3 +54,25 @@ def answered_question_ids(pool: ConnectionPool, attempt_id: UUID) -> set[str]:
     with pool.connection() as conn:
         rows = conn.execute("SELECT question_id FROM answer WHERE attempt_id = %s", (attempt_id,))
         return {question_id for (question_id,) in rows}
+
+
+def insert_answer(
+    pool: ConnectionPool, attempt_id: UUID, question_id: str, selected: list[str], is_correct: bool
+) -> bool:
+    with pool.connection() as conn:
+        inserted = conn.execute(
+            "INSERT INTO answer (attempt_id, question_id, selected, is_correct)"
+            " VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING 1",
+            (attempt_id, question_id, selected, is_correct),
+        ).fetchone()
+        return inserted is not None
+
+
+def get_answer(
+    pool: ConnectionPool, attempt_id: UUID, question_id: str
+) -> tuple[list[str], bool] | None:
+    with pool.connection() as conn:
+        return conn.execute(
+            "SELECT selected, is_correct FROM answer WHERE attempt_id = %s AND question_id = %s",
+            (attempt_id, question_id),
+        ).fetchone()
