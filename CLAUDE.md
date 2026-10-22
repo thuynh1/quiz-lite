@@ -14,11 +14,14 @@ Quiz-lite: a small quiz app. Players take multiple-choice quizzes loaded from YA
 - One Docker container for the app. `docker compose up` starts the app and Postgres locally.
 
 ## Commands
-Expected once task 1 lands. Update this section if plan.md changes them.
+From docs/plan.md. Available once tasks 1 to 3 land.
 - Install: `uv sync`
 - Run locally: `docker compose up`
-- Lint: `uv run ruff check --quiet`
-- Test: `uv run pytest -q`
+- Lint: `uv run ruff check --quiet` and `uv run ruff format --check`
+- Test: `docker compose up -d db`, then `uv run pytest -q`
+- Validate quizzes: `uv run python -m app.quizzes check quizzes`
+- Regenerate quiz schema: `uv run python -m app.quizzes schema > quizzes/quiz.schema.json`
+- Migrate: `python -m app.migrate` (also runs on container start)
 
 ## Invariants that are easy to break
 Full details are in the spec. These apply to every task.
