@@ -257,7 +257,7 @@ The app ships as one container image built from the `Dockerfile`:
 
 Managed Postgres is reached via `DATABASE_URL`, set as a host secret. Run one instance in the same region as the database; that's the main lever for staying under 200 ms. Migrations run on boot, which is safe with a single instance and the advisory lock.
 
-Two candidate hosts. The owner picks one before task 11. Check current pricing at that time.
+**Chosen host: Render, free tier** (owner decision, 2026-10-22). The app and Postgres are defined in `render.yaml` as a Blueprint. The owner accepts the free-tier limits: the web service spins down after 15 minutes idle and takes about a minute to wake, and the free database expires after 30 days. The 200 ms target applies to a warm server (spec Clarification 15). The comparison below is kept as the record of the choice.
 
 | | Render | Fly.io |
 |---|---|---|
