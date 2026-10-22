@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} | Quiz-lite{% endblock %}
+{% block content %}
+<header>
+  <h1>{{ quiz.title }}</h1>
+  <p>{{ number }} of {{ total }}</p>
+</header>
+<form method="post">
+  <fieldset>
+    <legend>{{ question.prompt }}</legend>
+    {% for option in question.options %}
+    <label><input type="{{ 'radio' if question.type == 'single' else 'checkbox' }}" name="selected" value="{{ option.id }}"> {{ option.text }}</label>
+    {% endfor %}
+  </fieldset>
+  <button type="submit">Submit</button>
+</form>
+{% endblock %}
