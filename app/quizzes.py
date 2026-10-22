@@ -92,6 +92,8 @@ def load_quizzes(directory: str | Path) -> dict[str, Quiz]:
     directory = Path(directory)
     if not directory.is_dir():
         raise QuizError(f"{directory}: not a directory")
+    if misnamed := sorted(directory.glob("*.yml")):
+        raise QuizError("\n".join(f"{path}: rename it to {path.stem}.yaml" for path in misnamed))
     quizzes = {}
     for path in sorted(directory.glob("*.yaml")):
         quiz = _load_file(path)
