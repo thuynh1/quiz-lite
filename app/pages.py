@@ -16,6 +16,4 @@ def home(request: Request):
         {"quiz": quiz, "best": None, "last_attempted": None}
         for quiz in request.app.state.quizzes.values()
     ]
-    # Return a str, not a TemplateResponse: FastAPI drops the player cookie set by the
-    # router dependency when an endpoint returns its own Response object.
-    return templates.get_template("home.html").render(total_points=0, rows=rows)
+    return templates.TemplateResponse(request, "home.html", {"total_points": 0, "rows": rows})
