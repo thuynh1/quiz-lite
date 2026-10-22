@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.db import is_healthy, open_pool
+from app.pages import router as pages_router
 from app.quizzes import load_quizzes
 
 
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Quiz-lite", lifespan=lifespan)
+app.include_router(pages_router)
 
 
 @app.get("/healthz")

@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 import psycopg
 from psycopg_pool import ConnectionPool, PoolTimeout
 
@@ -16,3 +18,17 @@ def is_healthy(pool: ConnectionPool) -> bool:
         return True
     except (PoolTimeout, psycopg.OperationalError):
         return False
+
+
+def player_exists(pool: ConnectionPool, player_id: UUID) -> bool:
+    with pool.connection() as conn:
+        return (
+            conn.execute("SELECT 1 FROM player WHERE id = %s", (player_id,)).fetchone() is not None
+        )
+
+
+def create_player(pool: ConnectionPool) -> UUID:
+    player_id = uuid4()
+    with pool.connection() as conn:
+        conn.execute("INSERT INTO player (id) VALUES (%s)", (player_id,))
+    return player_id
