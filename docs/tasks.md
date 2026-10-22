@@ -47,7 +47,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - a new valid YAML file in the fixture directory appears after an app restart
   - Covers: US1.1, US1.3, US5.1.
 
-- [ ] **6. Start an attempt and show a question**
+- [x] **6. Start an attempt and show a question**
   - `POST /quizzes/{slug}/attempts`, `GET /attempts/{id}`, and `GET /attempts/{id}/questions/{qid}` in its unanswered state. The `question.html` template has radio inputs for single and checkboxes for multi. Another player's attempt returns 404.
   - Tests:
     - start returns 303 to q1 and an attempt row is `in_progress`

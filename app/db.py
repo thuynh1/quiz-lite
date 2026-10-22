@@ -32,3 +32,25 @@ def create_player(pool: ConnectionPool) -> UUID:
     with pool.connection() as conn:
         conn.execute("INSERT INTO player (id) VALUES (%s)", (player_id,))
     return player_id
+
+
+def create_attempt(pool: ConnectionPool, player_id: UUID, quiz_slug: str) -> UUID:
+    with pool.connection() as conn:
+        return conn.execute(
+            "INSERT INTO attempt (player_id, quiz_slug) VALUES (%s, %s) RETURNING id",
+            (player_id, quiz_slug),
+        ).fetchone()[0]
+
+
+def get_attempt(pool: ConnectionPool, attempt_id: UUID, player_id: UUID) -> tuple[str, str] | None:
+    with pool.connection() as conn:
+        return conn.execute(
+            "SELECT quiz_slug, status FROM attempt WHERE id = %s AND player_id = %s",
+            (attempt_id, player_id),
+        ).fetchone()
+
+
+def answered_question_ids(pool: ConnectionPool, attempt_id: UUID) -> set[str]:
+    with pool.connection() as conn:
+        rows = conn.execute("SELECT question_id FROM answer WHERE attempt_id = %s", (attempt_id,))
+        return {question_id for (question_id,) in rows}
