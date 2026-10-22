@@ -39,7 +39,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
     - `/healthz` sets no cookie
   - Covers: US4.1.
 
-- [ ] **5. Home page: quiz list**
+- [x] **5. Home page: quiz list**
   - `templates/base.html` (with the `tz` cookie line), `home.html`, `GET /` listing title and question count, total points (0), best `—`, Last Attempted `None`.
   - Tests:
     - with 2 fixture quizzes, both titles and counts render
