@@ -1,0 +1,20 @@
+slug: alpha
+title: Alpha Quiz
+questions:
+  - id: q1
+    prompt: Pick b.
+    type: single
+    options:
+      - {id: a, text: A}
+      - {id: b, text: B}
+    correct: [b]
+    explanation: B is right.
+  - id: q2
+    prompt: Pick a and c.
+    type: multi
+    options:
+      - {id: a, text: A}
+      - {id: b, text: B}
+      - {id: c, text: C}
+    correct: [a, c]
+    explanation: A and C are right.

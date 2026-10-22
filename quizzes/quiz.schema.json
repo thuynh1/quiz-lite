@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Option": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "Option",
+      "type": "object"
+    },
+    "Question": {
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "type": {
+            "const": "single"
+          }
+        }
+      },
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "prompt": {
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "single",
+            "multi"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "minItems": 2,
+          "title": "Options",
+          "type": "array"
+        },
+        "correct": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Correct",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "explanation": {
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "prompt",
+        "type",
+        "options",
+        "correct",
+        "explanation"
+      ],
+      "then": {
+        "properties": {
+          "correct": {
+            "maxItems": 1
+          }
+        }
+      },
+      "title": "Question",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "slug": {
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "title": "Slug",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "questions": {
+      "items": {
+        "$ref": "#/$defs/Question"
+      },
+      "minItems": 1,
+      "title": "Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "slug",
+    "title",
+    "questions"
+  ],
+  "title": "Quiz",
+  "type": "object"
+}

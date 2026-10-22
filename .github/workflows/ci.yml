@@ -13,4 +13,5 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check --quiet
       - run: uv run ruff format --check
+      - run: uv run python -m app.quizzes check quizzes
       - run: uv run pytest -q

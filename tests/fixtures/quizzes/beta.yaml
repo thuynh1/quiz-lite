@@ -1,0 +1,11 @@
+slug: beta
+title: Beta Quiz
+questions:
+  - id: q1
+    prompt: Pick a.
+    type: single
+    options:
+      - {id: a, text: A}
+      - {id: b, text: B}
+    correct: [a]
+    explanation: A is right.

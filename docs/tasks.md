@@ -8,7 +8,7 @@ Work from the first unchecked task. Each task is one session and one commit. It 
   - Test: `tests/test_smoke.py`, where `GET /healthz` returns 200.
   - Covers: none (infrastructure).
 
-- [ ] **2. Quiz YAML loading and validation**
+- [x] **2. Quiz YAML loading and validation**
   - `app/quizzes.py`: Pydantic models, `load_quizzes(dir)`, semantic checks, errors formatted `<file>: <field path>: <message>`, CLI `check` and `schema`.
   - Lifespan loads quizzes from `QUIZ_DIR` and fails startup on error. `quizzes/http-basics.yaml` and the generated `quizzes/quiz.schema.json` are added. CI gains the `check` step.
   - Tests:
