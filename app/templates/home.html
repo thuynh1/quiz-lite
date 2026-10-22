@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<header>
+  <h1>Quiz-lite</h1>
+  <p>Total points: {{ total_points }}</p>
+</header>
+<table>
+  <thead>
+    <tr>
+      <th scope="col">Quiz</th>
+      <th scope="col">Questions</th>
+      <th scope="col">Best</th>
+      <th scope="col">Last Attempted</th>
+      <td></td>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <th scope="row">{{ row.quiz.title }}</th>
+      <td>{{ row.quiz.questions | length }}</td>
+      <td>{{ row.best or "—" }}</td>
+      <td>{{ row.last_attempted or "None" }}</td>
+      <td>
+        <form method="post" action="/quizzes/{{ row.quiz.slug }}/attempts">
+          <button type="submit" aria-label="Start {{ row.quiz.title }}">Start</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
