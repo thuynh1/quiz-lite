@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.quizzes import QuizError, load_quizzes, quiz_schema
+from app.quizzes import main as quizzes_main
 
 ROOT = Path(__file__).parents[1]
 FIXTURES = ROOT / "tests" / "fixtures" / "quizzes"
@@ -66,6 +67,19 @@ def test_invalid_quiz_names_file_and_field(tmp_path, old, new, field):
 def test_missing_directory_raises(tmp_path):
     with pytest.raises(QuizError, match="not a directory"):
         load_quizzes(tmp_path / "nope")
+
+
+def test_yml_file_fails_check_and_startup(tmp_path, monkeypatch):
+    path = tmp_path / "alpha.yml"
+    path.write_text(ALPHA)
+
+    with pytest.raises(SystemExit) as exc:
+        quizzes_main(["check", str(tmp_path)])
+    assert f"{path}: rename it to alpha.yaml" in str(exc.value.code)
+
+    monkeypatch.setenv("QUIZ_DIR", str(tmp_path))
+    with pytest.raises(QuizError, match="rename it to alpha.yaml"), TestClient(app):
+        pass
 
 
 def test_app_startup_with_bad_directory_raises(tmp_path, monkeypatch):
